@@ -1,24 +1,26 @@
 version: '3'
+
 services:
   nginx:
-    image: nginx:stable
-    container_name: react_nginx
-    restart: unless-stopped
+    image: nginx:latest
+    container_name: website_nginx
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./react-site/dist:/usr/share/nginx/html:ro
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./certbot/conf:/etc/letsencrypt
-      - ./certbot/www:/var/www/certbot
-    depends_on:
-      - certbot
+      - /mnt/data/WebsitePublish/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /mnt/data/WebsitePublish/react-site/dist:/usr/share/nginx/html:ro
+      - /mnt/data/WebsitePublish/certbot/conf:/etc/letsencrypt
+      - /mnt/data/WebsitePublish/certbot/www:/var/www/certbot
+    restart: unless-stopped
 
   certbot:
     image: certbot/certbot
-    container_name: certbot
+    container_name: website_certbot
     volumes:
-      - ./certbot/conf:/etc/letsencrypt
-      - ./certbot/www:/var/www/certbot
-    entrypoint: /bin/sh -c 'trap exit TERM; while :; do sleep 1d; done'
+      - /mnt/data/WebsitePublish/certbot/conf:/etc/letsencrypt
+      - /mnt/data/WebsitePublish/certbot/www:/var/www/certbot
+    entrypoint: /bin/sh -c
+    command: >
+      "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot; sleep 12h & wait $${!}; done"
+    restart: unless-stopped
